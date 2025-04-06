@@ -1,0 +1,11 @@
+Analyze the following batch of images.
+
+Based *only* on the images provided in this batch, generate a detailed list or description of the items visible.
+Focus on:
+- Identifying specific objects (e.g., "vintage Coca-Cola cooler", "John Deere pedal tractor", "assorted hand tools", "Zippo lighters in display case").
+- Noting quantities if clearly discernible (e.g., "three coolers", "a large collection of...").
+- Describing the apparent condition if possible (e.g., "appears rusty", "in good condition", "mint condition").
+- Grouping similar items together where logical.
+- Formatting the output as a clear, readable list or paragraph suitable for inclusion in an inventory or proposal description.
+
+Do not include items not visible in the current batch of images. Do not add introductory or concluding remarks, just provide the description. 

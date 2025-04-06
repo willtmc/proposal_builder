@@ -1,0 +1,6 @@
+{
+  "openai_model": "gpt-4o",
+  "template_summary_max_chars": 1500,
+  "content_summary_max_chars": 2500,
+  "output_filename": "generated_proposal.md"
+} 

@@ -1,0 +1,11 @@
+openai
+python-dotenv
+PyPDF2
+pdf2image
+Pillow
+# On macOS, you also need poppler: brew install poppler
+# On Debian/Ubuntu: sudo apt-get install poppler-utils
+# Tesseract OCR dependencies:
+# On macOS: brew install tesseract
+# On Debian/Ubuntu: sudo apt-get install tesseract-ocr
+pytesseract 

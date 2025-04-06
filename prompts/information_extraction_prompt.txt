@@ -1,0 +1,19 @@
+Here is the template with required variables:
+
+{template_with_vars}
+
+Here are the source documents (potentially including a photo-based inventory description, agent bio, company bio, and client documents):
+
+{combined_source_text}
+
+1. Extract all information needed to fill in the template variables. Use all sections of the provided source text (Photo-based inventory, Agent Bio, Company Bio, Client Docs) as needed.
+2. Pay special attention to the PHOTO-BASED INVENTORY section, if present, when filling the `property_description` variable.
+3. For each variable in the template, provide the exact value found in the source text or inferred from the images. Analyze names like 'Leah Pucket' to populate `client_first_name` and `client_last_name` fields if possible.
+4. If a value is definitively not found in the source documents for a specific variable, use the exact placeholder "[Information Not Found]". Do not guess or make up information.
+5. Format the response as a JSON object where keys are variable names (without curly braces) and values are the extracted content or the placeholder.
+6. For property details (often in `property_description`), synthesize information from both the PHOTO-BASED INVENTORY section and the CLIENT DOCUMENTS section if available.
+7. For location details (like `auction_site`), extract the specific location mentioned (e.g., 'Tullahoma') if available. If only a general area is mentioned, use that. If no location is mentioned, use the placeholder.
+8. Format all financial numbers with commas and dollar signs (e.g., $1,234,567.89).
+9. Include units for all measurements where applicable.
+10. Extract relevant biographical information from the AGENT BIO and COMPANY BIO sections if template variables like {{agent_bio}} or {{company_bio}} exist.
+11. Ensure the output is ONLY the JSON object, with no preamble or explanation. 

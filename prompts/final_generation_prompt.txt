@@ -1,0 +1,19 @@
+Here is the template:
+
+{template_with_vars}
+
+Here is the information to fill in (in JSON format):
+
+{extracted_info}
+
+1. Fill in each variable (e.g., {{variable_name}}) in the template with its corresponding value from the JSON.
+2. If a JSON value is "[Information Not Found]" or similar, replace the variable in the template with that placeholder text, or omit the line/section if appropriate based on context.
+3. Keep all static content (company info, headers, etc.) exactly as is.
+4. Ensure the output maintains the exact formatting (markdown, line breaks, lists, emphasis) of the template.
+5. Output ONLY the final, filled-in document in proper markdown format with:
+   - Two spaces at the end of lines for intended line breaks within paragraphs.
+   - Proper header levels (#, ##, etc.).
+   - Proper list formatting (* or -).
+   - Proper emphasis (*italic*, **bold**).
+6. Do not include the initial variable list comment from the template in the final output.
+7. Do not add any preamble, explanation, or markdown fences (```) around the final output. 

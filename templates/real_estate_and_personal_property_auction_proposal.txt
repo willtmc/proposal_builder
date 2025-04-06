@@ -1,0 +1,203 @@
+MCLEMORE
+
+AUCTION COMPANY
+
+{{document_created_date}}
+{{client_first_name}} {{client_last_name}}
+{{client_company}}
+
+{{client_street_address}}
+
+{{client_city}}, {{client_state}} {{client_postal_code}}
+
+Dear {{client_first_name}} {{client_last_name}}:
+
+| am pleased to present the following proposal for the sale of your Real Estate and Personal
+Property at auction.
+
+PROPERTY DESCRIPTIONS
+
+Real Estate:
+{{real_estate_description}}, the "Real Estate"
+
+Personal Property:
+{{personal_property_description}}, the "Personal Property"
+
+(Collectively, the "Property")
+
+GENERAL PARAMETERS WITH RESPECT TO THE REAL ESTATE
+
+1. As your exclusive agent, we will sell the Real Estate in an online auction that will
+conclude {{auction_end_date}} or some other mutually agreeable date.
+
+2. We will prepare the property for sale and take care of mowing and cleanup as needed.
+
+3. We will advertise the auction on our website at www.mclemoreauction.com, by social
+media, search and other online advertising, by placing signs on the Property, by direct
+mail, and in our weekly email newsletter.
+
+4. We will offer compensation to any real estate brokers representing buyers at the
+
+auction. They must registered with us before the auction. We will pay them from our
+commission at our cost.
+
+We will provide the technology and accounting required to conduct an online auction of
+the Real Estate to take place at www.mclemoreauction.com.
+
+We will collect a {{deposit_percentage}}% nonrefundable deposit from the high bidder at the conclusion of
+the auction.
+
+The auction deposit will be held by and closing will be conducted by a mutually
+agreeable closing attorney. We suggest {{escrow_agent_name}} for this auction.
+
+Closing will take place on or before {{closing_date}}.
+
+GENERAL PARAMETERS WITH RESPECT TO THE PERSONAL PROPERTY
+
+1. As your exclusive agent we will sell the Personal Property in an online auction that will
+conclude on or before {{auction_end_date}}.
+
+The Personal Property will remain in its current location, the "Auction Site".
+
+We will catalog and photograph the Personal Property in its current location at {{auction_site}}.
+Descriptions and photographs will be available to potential bidders at
+www.mclemoreauction.com.
+
+We will host an auction preview on the premises at {{auction_site}}. We will provide the
+staff required to manage the auction preview.
+
+We will provide the technology and accounting required to conduct an online auction of
+the property at www.mclemoreauction.com.
+
+We will sell the Personal Property to the highest bidders regardless of price, without
+reserves or minimum bids.
+
+We will collect and remit all applicable state and local sales taxes.
+
+We will accept payment of invoices totaling less than $5,000 by credit and debit cards
+at the auction.
+
+We will collect and retain a {{buyers_premium_percentage}}% buyer's premium from all purchasers at the auction.
+
+We will mail you payment within 14 days of the conclusion of the auction.
+
+After the auction concludes, we will schedule a time for purchasers to pickup the
+Personal Property. We will provide the staff required to manage the pickup and
+removal process.
+
+CRITICAL PATH
+
+* {{contract_date}}:
+* Contract to Auction Real Estate Signed
+
+470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
+
+
+
+MCLEMORE
+
+AUCTION COMPANY
+
+* Contract to Auction Personal Property Signed
+
+* {{advertising_start_date}}:
+* Announcement in "This Week at McLemore Auction" Email Newsletter
+* Signs Installed
+* Advertising Commences
+* Bidding Opens at www.mclemoreauction.com
+
+* {{auction_end_date}}:
+* Auction Closes
+
+* {{closing_date}}:
+* Latest Real Estate Closing Date
+
+* {{pickup_date}}:
+* Latest Personal Property Pickup Date
+
+470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
+
+
+
+MCLEMORE
+
+AUCTION COMPANY
+
+MARKETING BUDGET
+
+Item Subtotal
+McLemore Auction Website and Newsletter ${{marketing_website_newsletter_cost}}
+Facebook Advertising Campaign ${{marketing_facebook_cost}}
+Google Advertising Campaign ${{marketing_google_cost}}
+Direct Mail ${{marketing_direct_mail_cost}}
+Drone Photography and Video Production ${{marketing_drone_cost}}
+Sign Production and Installation ${{marketing_signs_cost}}
+
+Total ${{marketing_total_cost}}
+
+470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
+
+
+
+MCLEMORE
+
+AUCTION COMPANY
+PROPOSAL
+With Respect to the Real Estate:
+Option 1: Reserve Auction Conditions
+
+1. We will sell the Real Estate to the highest bidder subject to your acceptance of the high
+bid price determined at the auction.
+
+2. You will pay us ${{marketing_retainer_fee}} at the time of the execution of a Contract to Auction Real
+Estate. We will spend ${{marketing_expenses}} advertising the property and will retain
+${{marketing_retainer_fee_description}} as a fee for our services.
+
+3. A {{buyers_premium_percentage}}% buyer's premium will be added to the high bid price
+determined at the auction to arrive at the total contract sales price for the Real Estate.
+
+4. We will receive an amount equal to the {{buyers_premium_percentage}}% buyer's premium as our commission
+at the real estate closing.
+
+5. We will agree to reduce our commission by a total of ${{commission_reduction_amount}} at the real estate closing.
+
+Option 2: Absolute Auction Conditions
+
+1. We will sell the Real Estate to the highest bidder at absolute auction, without minimum
+bids or reserve.
+
+2. A {{buyers_premium_percentage}}% buyer's premium will be added to the high bid prices determined
+at the auction to arrive at the total contract sales price for the Real Estate.
+
+3. We will receive an amount equal to the {{buyers_premium_percentage}}% buyer's premium as our commission
+at the real estate closing.
+
+4. We will receive a reimbursement for auction expenses in the amount of ${{marketing_expenses}}
+at the real estate closing.
+
+With Respect to the Personal Property:
+
+1. In exchange for our efforts we will receive:
+1. A commission in an amount equal to {{commission_percentage}}% of auction proceeds collected;
+2. A reimbursement for the costs of credit card processing in the amount of {{cc_processing_percentage}}% of
+invoice totals paid by credit or debit card.
+3. A reimbursement for the costs of receiving payment by wire transfer in the amount of
+${{wire_transfer_fee}} per wire received.
+
+This proposal is provided for your consideration and acceptance at or before 5:00 pm on
+{{acceptance_deadline_date}}, after which time it may become necessary to postpone the proposed auction
+date.
+
+Thank you for the opportunity to submit this proposal. | look forward to working for you.
+
+Sincerely yours,
+
+Will McLemore, CAI
+President
+
+470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
+
+<!-- Bio sections removed, will be appended dynamically if needed -->
+
+
+

@@ -1,0 +1,108 @@
+MCLEMORE
+
+AUCTION COMPANY
+
+[Document.CreatedDate]
+
+[Client.FirstName] [Client.LastName]
+[Client.Company]
+
+[Client.StreetAddress]
+
+[Client.City], [Client.State] [Client.PostalCode]
+
+Dear [Client.FirstName] [Client.LastName]:
+
+| am pleased to present the following proposal for the sale of your Property at auction.
+
+PROPERTY DESCRIPTION
+
+{{property_description}}, the "Property"
+
+GENERAL PARAMETERS
+
+1. As your exclusive agent we will sell the Property in an online auction that will conclude
+on or before {{auction_end_date}}.
+
+2. We will catalog and photograph the Property in its current location at {{auction_site}}.
+Descriptions and photographs will be available to potential bidders at
+www.mclemoreauction.com.
+
+3. We will host an auction preview on the premises at {{auction_site}}. We will provide the
+staff required to manage the auction preview.
+
+4. We will provide the technology and accounting required to conduct an online auction of
+the property at www.mclemoreauction.com.
+
+5. We will sell the Property to the highest bidders regardless of price, without reserves or
+minimum bids. <!-- Consider adding an option for reserve if needed -->
+
+6. We will collect and remit all applicable state and local sales taxes.
+
+7. We will accept payment of invoices totaling less than $5,000 by credit and debit cards
+at the auction.
+
+8. We will collect and retain a {{buyers_premium_percentage}}% buyer's premium from all purchasers at the auction.
+
+9. We will mail you payment within 14 days of the conclusion of the auction.
+
+10. After the auction concludes, we will schedule a time for purchasers to pickup the
+Property. We will provide the staff required to manage the pickup and removal process.
+
+470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
+
+
+
+MCLEMORE
+
+AUCTION COMPANY
+CRITICAL PATH
+
+* {{contract_date}}:
+* Contract to Auction Personal Property Signed
+
+* {{advertising_start_date}}:
+* Announcement in "This Week at McLemore Auction" Email Newsletter
+* Advertising Commences
+* Bidding Opens at www.mclemoreauction.com
+
+* {{auction_end_date}}:
+* Auction Closes
+
+* {{pickup_date}}:
+* Latest Pickup Date
+
+470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
+
+
+
+MCLEMORE
+
+AUCTION COMPANY
+PROPOSAL
+
+Based on the above general parameters, we are pleased to offer the following proposal. In
+exchange for our efforts we will receive:
+
+1. A commission in the amount of {{commission_percentage}}% of auction proceeds collected;
+2. A reimbursement for the costs of credit card processing in the amount of {{cc_processing_percentage}}% of invoice
+totals paid by credit or debit card.
+3. A reimbursement for the costs of receiving payment by wire transfer in the amount of
+${{wire_transfer_fee}} per wire received.
+
+This proposal is provided for your consideration and acceptance at or before 5:00 pm on
+{{acceptance_deadline_date}}, after which time it may become necessary to postpone the proposed auction
+date.
+
+Thank you for the opportunity to submit this proposal. | look forward to working for you.
+
+Sincerely yours,
+
+Will McLemore, CAI
+President
+
+470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
+
+<!-- Bio sections removed, will be appended dynamically if needed -->
+
+

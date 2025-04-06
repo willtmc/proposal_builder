@@ -1,0 +1,24 @@
+Here is a template document:
+
+{template_text}
+
+Create a template where:
+1. Keep all company information (address, website, phone) exactly as is
+2. Keep all standard headers and section titles exactly as is
+3. Only convert client-specific or property-specific information into variables with descriptive names in double curly braces
+4. Include a list of all required variables at the top as a comment
+5. Maintain all formatting and structure exactly as in the original
+6. Use "{current_date}" for the date
+Example of what to templatize:
+- Client name -> {{client_name}}
+- Property address -> {{property_address}}
+- Property details -> {{property_details}}
+Example of what to keep as is:
+- Company address
+- Website
+- Phone number
+- Section headers
+Format the template in proper markdown with:
+- Two spaces at end of lines for line breaks
+- Proper header levels (# for main headers)
+- Proper list formatting 
