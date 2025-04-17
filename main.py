@@ -352,6 +352,48 @@ def run_proposal_builder():
                         del extracted_data_dict[obsolete]
                 # --- End Date Injection ---
 
+                # --- Fix 1: Only include client_company if present and non-blank ---
+                if 'client_company' in extracted_data_dict and (not extracted_data_dict['client_company'] or extracted_data_dict['client_company'].strip() == ''):
+                    del extracted_data_dict['client_company']
+
+                # --- Fix 2: Always prompt for marketing budget line items if missing, blank, zero, or 'No Charge' ---
+                marketing_keys = [
+                    'marketing_facebook_cost',
+                    'marketing_google_cost',
+                    'marketing_direct_mail_cost',
+                    'marketing_drone_cost',
+                    'marketing_signs_cost'
+                ]
+                for k in marketing_keys:
+                    v = extracted_data_dict.get(k, None)
+                    if v is None or str(v).strip() in ('', '0', '0.0', '$0', '$0.00', 'No Charge', '[Information Not Found]'):
+                        extracted_data_dict[k] = '[Information Not Found]'
+
+                # --- Fix 3: Ensure all currency fields use commas and two decimals ---
+                def parse_money(val):
+                    try:
+                        v = str(val).replace('$','').replace(',','').strip()
+                        if not v or v.lower() == 'no charge' or v == '[Information Not Found]':
+                            return None
+                        return float(v)
+                    except Exception:
+                        return None
+                total = 0.0
+                has_any_value = False
+                for k in marketing_keys:
+                    v = extracted_data_dict.get(k)
+                    amount = parse_money(v)
+                    if amount is not None:
+                        has_any_value = True
+                        total += amount
+                        extracted_data_dict[k] = f"${amount:,.2f}"
+                    else:
+                        extracted_data_dict[k] = '[Information Not Found]'
+                if has_any_value and total > 0:
+                    extracted_data_dict['marketing_total_cost'] = f"${total:,.2f}"
+                else:
+                    extracted_data_dict['marketing_total_cost'] = "No Charge"
+
                 missing_keys = [
                     key for key, value in extracted_data_dict.items() 
                     if value == "[Information Not Found]" and key not in ['marketing_expenses','marketing_retainer_fee_description','commission_reduction_amount']
