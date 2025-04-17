@@ -320,23 +320,30 @@ def run_proposal_builder():
                 # --- Marketing fields ---
                 extracted_data_dict['deposit_percentage'] = "15" # Always 15%
                 extracted_data_dict['marketing_website_newsletter_cost'] = "No Charge"
-                # Calculate marketing_total_cost
+                # Calculate marketing_total_cost with correct formatting and logic
                 def parse_money(val):
                     try:
                         v = str(val).replace('$','').replace(',','').strip()
                         if not v or v.lower() == 'no charge':
                             return 0.0
                         return float(v)
-                    except:
+                    except Exception:
                         return 0.0
                 total = 0.0
+                has_any_value = False
                 for k in ['marketing_facebook_cost','marketing_google_cost','marketing_direct_mail_cost','marketing_drone_cost','marketing_signs_cost']:
                     v = extracted_data_dict.get(k)
-                    if v is not None and v != '':
+                    if v is not None and v != '' and str(v).lower() != 'no charge':
                         total += parse_money(v)
-                # Only show 'No Charge' if all fields are zero/blank, else show total as $X,XXX
-                if total > 0:
-                    extracted_data_dict['marketing_total_cost'] = f"${total:,.0f}"
+                        has_any_value = True
+                        # Format each value as currency with commas and 2 decimals
+                        try:
+                            extracted_data_dict[k] = f"${parse_money(v):,.2f}"
+                        except Exception:
+                            extracted_data_dict[k] = v
+                # Only show 'No Charge' if all fields are zero/blank/No Charge, else show total as $X,XXX.XX
+                if has_any_value and total > 0:
+                    extracted_data_dict['marketing_total_cost'] = f"${total:,.2f}"
                 else:
                     extracted_data_dict['marketing_total_cost'] = "No Charge"
                 # Remove eliminated fields if present
