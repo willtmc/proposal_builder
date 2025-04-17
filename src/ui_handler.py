@@ -9,7 +9,7 @@ def select_data_folder():
     
     folder_path = filedialog.askdirectory(
         title='Select Data Folder',
-        initialdir=os.path.expanduser('~')  # Start in home directory
+        initialdir='/Users/willmclemore/McLemore Auction Dropbox/MAC Deals'  # Default folder for user
     )
     root.destroy()
     return folder_path 

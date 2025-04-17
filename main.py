@@ -8,6 +8,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, date # Added date imports
 import calendar
+import subprocess
+import re
 
 # Import functions/classes from the new modules
 from src import config_loader, ui_handler, data_processor, llm_service, file_utils, pdf_handler
@@ -29,6 +31,41 @@ def log_section(title, content, truncate=1000):
         print(content)
     print(f"--- END DEBUG: {title} ---")
 # --- End Helper --- 
+
+def load_template_var_index(template_filename):
+    # Remove .txt extension if present
+    if template_filename.endswith('.txt'):
+        template_var_index_filename = template_filename[:-4] + '.json'
+    else:
+        template_var_index_filename = template_filename + '.json'
+    template_var_index_path = Path("template_var_indexes") / template_var_index_filename
+    with open(template_var_index_path, "r") as f:
+        return json.load(f)
+
+def has_template_changed(template_path, template_var_index_path):
+    index_mtime = template_var_index_path.stat().st_mtime if template_var_index_path.exists() else 0
+    template_mtime = template_path.stat().st_mtime
+    return template_mtime > index_mtime
+
+def render_template(template, values):
+    import re
+    def replacer(match):
+        key = match.group(1).strip()
+        return str(values.get(key, f"[MISSING:{key}]") )
+    return re.sub(r"{{\s*([a-zA-Z0-9_]+)\s*}}", replacer, template)
+
+def run_template_indexer(template_filename):
+    script_path = Path("scripts/template_variable_indexer.py")
+    template_name_no_ext = template_filename[:-4] if template_filename.endswith(".txt") else template_filename
+    # Run the indexer script for this template
+    result = subprocess.run([
+        "python3", str(script_path)
+    ], capture_output=True, text=True)
+    print(result.stdout)
+    if result.returncode != 0:
+        print("Error: Failed to re-index template variables.\n" + result.stderr)
+        return False
+    return True
 
 def run_proposal_builder():
     """
@@ -61,76 +98,6 @@ def run_proposal_builder():
         print(f"An unexpected error occurred during LLM service initialization: {e}")
         sys.exit(1)
 
-    # --- Calculate Dynamic Dates --- 
-    today = date.today()
-    proposal_date_str = today.strftime("%B %d, %Y") # Format for potential use
-
-    # Step 1: Get Auction End Date from User
-    auction_weeks = None
-    while auction_weeks is None:
-        try:
-            weeks_input = input(f"\nEnter number of weeks from today ({proposal_date_str}) until Auction End Date: ").strip()
-            auction_weeks = int(weeks_input)
-            if auction_weeks <= 0:
-                 print("Please enter a positive number of weeks.")
-                 auction_weeks = None
-        except ValueError:
-            print("Invalid input. Please enter a number.")
-    auction_end_date = today + timedelta(weeks=auction_weeks)
-    auction_end_date_str = auction_end_date.strftime("%B %d, %Y")
-
-    # --- New: Calculate Closing Date (30 days after auction, next business day if needed) ---
-    def next_business_day(start_date):
-        d = start_date
-        while d.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
-            d += timedelta(days=1)
-        return d
-    closing_candidate = auction_end_date + timedelta(days=30)
-    closing_date = next_business_day(closing_candidate)
-    closing_date_str = closing_date.strftime("%B %d, %Y")
-
-    # --- New: Calculate Contract Date (Friday of week following proposal date) ---
-    # Find next week's Monday
-    days_until_next_monday = (0 - today.weekday() + 7) % 7
-    next_monday = today + timedelta(days=days_until_next_monday)
-    # Friday of that week
-    contract_date = next_monday + timedelta(days=4)
-    contract_date_str = contract_date.strftime("%B %d, %Y")
-
-    # --- New: Advertising Start Date (second Monday after contract date) ---
-    days_until_monday_from_contract = (0 - contract_date.weekday() + 7) % 7
-    first_monday_after_contract = contract_date + timedelta(days=days_until_monday_from_contract)
-    advertising_start_date = first_monday_after_contract + timedelta(weeks=1) # Second Monday after contract
-    advertising_start_date_str = advertising_start_date.strftime("%B %d, %Y")
-
-    # --- Calculate Acceptance Deadline (Friday after today) ---
-    days_until_friday = (4 - today.weekday() + 7) % 7
-    if days_until_friday == 0: # If today is Friday, get next Friday
-        days_until_friday = 7
-    acceptance_deadline_date = today + timedelta(days=days_until_friday)
-    acceptance_deadline_date_str = acceptance_deadline_date.strftime("%B %d, %Y")
-
-    print(f"  Calculated Proposal Date: {proposal_date_str}")
-    print(f"  Calculated Acceptance Deadline: {acceptance_deadline_date_str}")
-    print(f"  Calculated Contract Date: {contract_date_str}")
-    print(f"  Calculated Advertising Start Date: {advertising_start_date_str}")
-    print(f"  Calculated Auction End Date: {auction_end_date_str}")
-    print(f"  Calculated Closing Date: {closing_date_str}")
-
-    # --- Step 1: Select Data Folder ---
-    print("\nStep 1: Select the folder containing your source documents")
-    print("A file dialog will open - please select the folder.")
-    folder_path_str = ui_handler.select_data_folder()
-    if not folder_path_str:
-        print("No data folder selected. Exiting.")
-        sys.exit(1)
-    
-    folder_path = Path(folder_path_str)
-    if not folder_path.is_dir():
-        print(f"Error: The path '{folder_path_str}' is not a valid directory.")
-        sys.exit(1)
-    print(f"Data folder selected: {folder_path}")
-
     # --- New Step: Select Template Type --- 
     print("\nSelect the type of proposal template to use:")
     print("  1: Personal Property Auction Proposal")
@@ -162,310 +129,205 @@ def run_proposal_builder():
     print(f"Using template: {template_filename}")
     # --- End New Step ---
 
+    # --- Ask for Auction Date (weeks out) BEFORE folder selection ---
+    while True:
+        try:
+            weeks = int(input("How many weeks from today should the auction end date be? (integer): ").strip())
+            break
+        except Exception:
+            print("Please enter a valid integer for weeks.")
+
+    # --- Step 1: Select Data Folder ---
+    print("\nStep 1: Select the folder containing your source documents")
+    print("A file dialog will open - please select the folder.")
+    folder_path_str = ui_handler.select_data_folder()
+    if not folder_path_str:
+        print("No data folder selected. Exiting.")
+        sys.exit(1)
+    folder_path = Path(folder_path_str)
+    if not folder_path.is_dir():
+        print(f"Error: The path '{folder_path_str}' is not a valid directory.")
+        sys.exit(1)
+    print(f"Data folder selected: {folder_path}")
+
+    # Load template variable index
+    template_vars = load_template_var_index(template_filename)
+    template_var_index_path = Path("template_var_indexes") / (template_filename[:-4] + ".json" if template_filename.endswith(".txt") else template_filename + ".json")
+    if has_template_changed(template_path, template_var_index_path):
+        print("WARNING: The template has changed since the last variable index was generated.")
+        choice = input("Would you like to re-index variables now? (Y/n): ").strip().lower()
+        if choice in ("", "y", "yes"):
+            if run_template_indexer(template_filename):
+                print("Template variable index regenerated. Reloading index...")
+                template_vars = load_template_var_index(template_filename)
+            else:
+                print("Failed to regenerate index. Exiting.")
+                sys.exit(1)
+        else:
+            print("Cannot proceed with outdated index. Exiting.")
+            sys.exit(1)
+
     # --- Step 2: Process Data Folder ---
     # data_processor handles iterating, extracting text, and summarizing errors
     all_extracted_text, error_summary, image_paths = data_processor.process_folder(folder_path)
 
-    # --- Add Default Bios (Will and MAC) to Source Text --- 
-    # Read bio files (handle potential errors)
-    will_bio = ""
-    mac_bio = ""
-    try:
-        will_bio_path = Path("templates") / "will_mclemore_bio.txt"
-        if will_bio_path.is_file():
-            will_bio = file_utils.extract_text_file(will_bio_path) or ""
-        else:
-            print("Warning: templates/will_mclemore_bio.txt not found.")
-    except Exception as e:
-        print(f"Warning: Could not read Will McLemore bio: {e}")
-        
-    try:
-        mac_bio_path = Path("templates") / "mac_bio.txt"
-        if mac_bio_path.is_file():
-            mac_bio = file_utils.extract_text_file(mac_bio_path) or ""
-        else:
-            print("Warning: templates/mac_bio.txt not found.")
-    except Exception as e:
-        print(f"Warning: Could not read MAC bio: {e}")
-        
-    # --- Add Optional Photo Description --- 
-    photo_description = ""
-    photo_desc_path = folder_path / "_photo_inventory_description.txt"
-    if photo_desc_path.is_file():
-        print(f"Found photo description file: {photo_desc_path.name}")
+    # --- AI Extraction Function ---
+    def extract_variables_with_ai(llm, doc_text, variable_index):
+        extract_vars = [v['name'] for v in variable_index if v['source'] == 'extracted']
+        if not extract_vars:
+            return {}
+        system_prompt = (
+            "You are an expert at reading real estate documents. Given the following document, extract values for these variables: "
+            f"{extract_vars}. Return your answer as a JSON object mapping variable names to values. If a variable is not present, use null or ''."
+        )
+        user_prompt = f"Document:\n{doc_text}\n\nExtract these variables: {extract_vars}\nReturn as JSON."
         try:
-            photo_description = file_utils.extract_text_file(photo_desc_path) or ""
-            if photo_description:
-                print("Successfully read photo description.")
-            else:
-                print("Warning: Photo description file is empty.")
+            response, _ = llm._call_openai_api(system_prompt, user_prompt, llm.config.get("openai_model", "gpt-4o"))
+            import json as _json
+            if response:
+                try:
+                    json_start = response.find('{')
+                    json_end = response.rfind('}') + 1
+                    json_str = response[json_start:json_end]
+                    return _json.loads(json_str)
+                except Exception:
+                    print("Warning: Could not parse JSON from LLM response.\nResponse was:\n", response)
+            return {}
         except Exception as e:
-             print(f"Warning: Could not read photo description file: {e}")
-    else:
-        print("Photo description file not found. To generate one, run generate_photo_description.py")
-        
-    # --- Optional: Ask User to Generate Photo Description --- 
-    run_photo_analysis = False
-    if image_paths:
-        user_choice = input(f"Found {len(image_paths)} images. Generate description from photos? (Requires API call, may take time/cost) [y/N]: ").strip().lower()
-        if user_choice == 'y':
-            run_photo_analysis = True
-            # Reset photo_description in case an old file exists but we want to regenerate
-            photo_description = ""
-            # Call the LLM service method to generate and save the description
-            generated_desc = llm.generate_description_from_photos(image_paths, folder_path)
-            if generated_desc:
-                 photo_description = generated_desc # Use the newly generated description
-            else:
-                 print("Photo description generation failed. Proceeding without it.")
-        else:
-             print("Skipping photo analysis.")
+            print(f"Error during LLM extraction: {e}")
+            return {}
 
-    # --- Load Photo Description (if not generated above, check again) --- 
-    if not run_photo_analysis and photo_desc_path.is_file(): # Check again if we skipped generation but file exists
-        print(f"Using existing photo description file: {photo_desc_path.name}")
+    # --- AI Variable Extraction for Each Document ---
+    ai_extracted_vars = {}
+    ai_vars = extract_variables_with_ai(llm, all_extracted_text, template_vars)
+    if ai_vars:
+        ai_extracted_vars.update({k: v for k, v in ai_vars.items() if v not in (None, "", "null")})
+
+    # --- Interview and Value Filling ---
+    extracted_data_dict = dict(ai_extracted_vars) # Start with AI-filled vars
+    for var in template_vars:
+        name = var["name"]
+        source = var["source"]
+        is_currency = var["is_currency"]
+        is_date = var["is_date"]
+        value = extracted_data_dict.get(name)
+        if value:
+            continue  # Already filled from AI
+        # 1. Calculated fields: skip for now, calculate after interview
+        if source == "calculated":
+            continue
+        # 2. User fields: always prompt if missing
+        if source == "user":
+            value = input(f"Enter value for '{name.replace('_',' ').title()}': ")
+        # 3. Extracted fields: should have been filled by AI, but if not, prompt as fallback
+        elif source == "extracted":
+            value = input(f"Enter value for '{name.replace('_',' ').title()}': ")
+        extracted_data_dict[name] = value
+
+    # --- Calculate and Format Calculated Fields ---
+    # Dates (using user-provided and business rules)
+    def get_next_weekday(base_date, weekday):
+        days_ahead = weekday - base_date.weekday()
+        if days_ahead <= 0:
+            days_ahead += 7
+        return base_date + timedelta(days=days_ahead)
+
+    def get_second_monday(base_date):
+        first_monday = get_next_weekday(base_date, 0)
+        return first_monday + timedelta(days=7)
+
+    def get_next_business_day(base_date):
+        if base_date.weekday() == 5:
+            return base_date + timedelta(days=2)
+        elif base_date.weekday() == 6:
+            return base_date + timedelta(days=1)
+        return base_date
+
+    def get_second_friday(base_date):
+        first_friday = get_next_weekday(base_date, 4)
+        return first_friday + timedelta(days=7)
+
+    today = date.today()
+
+    # 1. Auction Date: Use weeks collected earlier, set to next Thursday after that
+    auction_base = today + timedelta(weeks=weeks)
+    auction_date = get_next_weekday(auction_base, 3)  # 3=Thursday
+
+    # 2. Proposal Date: always today
+    proposal_date = today
+
+    # 3. Contract Date: second Friday after proposal date
+    contract_date = get_second_friday(proposal_date)
+
+    # 4. Advertising Start Date: Second Monday after proposal date
+    advertising_start_date = get_second_monday(proposal_date)
+
+    # 5. Closing Date: 30 days after auction date, or next business day if weekend
+    closing_date_base = auction_date + timedelta(days=30)
+    closing_date = get_next_business_day(closing_date_base)
+
+    # Format all dates as "Month DD, YYYY"
+    def fmt(dt):
+        return dt.strftime("%B %d, %Y")
+
+    extracted_data_dict["proposal_date"] = fmt(proposal_date)
+    extracted_data_dict["contract_date"] = fmt(contract_date)
+    extracted_data_dict["advertising_start_date"] = fmt(advertising_start_date)
+    extracted_data_dict["auction_end_date"] = fmt(auction_date)
+    extracted_data_dict["closing_date"] = fmt(closing_date)
+
+    # Marketing total cost
+    marketing_keys = [
+        "marketing_facebook_cost", "marketing_google_cost", "marketing_direct_mail_cost",
+        "marketing_drone_cost", "marketing_signs_cost"
+    ]
+    total = 0.0
+    for k in marketing_keys:
+        v = extracted_data_dict.get(k, "0")
         try:
-            photo_description = file_utils.extract_text_file(photo_desc_path) or ""
-            if not photo_description:
-                print("Warning: Existing photo description file is empty.")
-        except Exception as e:
-             print(f"Warning: Could not read existing photo description file: {e}")
-             photo_description = "" # Ensure it's empty on error
-            
-    # Combine bios with the text extracted from the data folder
-    # Using clear separators for the LLM
-    # Ensure all_extracted_text exists, even if empty
-    client_docs_text = all_extracted_text if all_extracted_text else "[No client documents processed]"
-    # Combine all text sources
-    combined_source_text = (
-        f"PHOTO-BASED INVENTORY:\n{photo_description}\n\n"
-        f"AGENT BIO:\n{will_bio}\n\n"
-        f"COMPANY BIO:\n{mac_bio}\n\n"
-        f"CLIENT DOCUMENTS:\n{client_docs_text}"
-    )
+            amount = float(str(v).replace("$","").replace(",","").strip())
+        except Exception:
+            amount = 0.0
+        total += amount
+        extracted_data_dict[k] = f"{amount:,.2f}"
+    extracted_data_dict["marketing_total_cost"] = f"{total:,.2f}"
 
-    # Print error summary
-    if error_summary:
-        print("\n--- File Processing Error Summary ---")
-        for error in error_summary:
-            print(f"- File: {error['file']}, Error: {error['error']}")
-        print("------------------------------------")
-
-    if not all_extracted_text:
-        print("\nNo text could be extracted from any supported files in the folder.")
-        print("Please ensure the folder contains readable files of supported types (PDF, TXT, common image formats).")
-        sys.exit(1)
-
-    print(f"\nSuccessfully consolidated text from source documents (Total length: {len(all_extracted_text)} characters).")
-    # Log the combined text including bios
-    log_section("Combined Source Text (for LLM)", combined_source_text)
-    
-    # --- Step 4: Read Template File --- (Path determined above)
-    print(f"\nReading template file: {template_path.name}...")
-    template_text = None
-    
+    # Retainer formatting (now 'retainer', not 'retainer_fee')
+    retainer = extracted_data_dict.get("retainer", extracted_data_dict.get("retainer_fee", "0"))
     try:
-        # Always read the template as a TXT file now
-        template_text = file_utils.extract_text_file(template_path)
-            
-        if not template_text:
-            print(f"Failed to extract any text from the template file: {template_path.name}")
-            sys.exit(1)
-            
-        print(f"Successfully extracted {len(template_text)} characters from template.")
-        log_section("Extracted Template Text", template_text)
+        retainer_amount = float(str(retainer).replace("$","").replace(",","").strip())
+    except Exception:
+        retainer_amount = 0.0
+    extracted_data_dict["retainer"] = f"{retainer_amount:,.2f}"
 
-    except Exception as e:
-         print(f"An unexpected error occurred while reading the template file: {e}")
-         sys.exit(1)
+    # Total due at contract
+    extracted_data_dict["total_due_at_contract"] = f"{(total + retainer_amount):,.2f}"
 
-    # --- Step 5: Generate Proposal using LLM ---
-    print("\n--- Starting LLM Proposal Generation ---")
-    try:
-        # Step 5a: Analyze Template
-        template_with_vars, usage_analyze = llm.analyze_template(template_text)
-        if not template_with_vars:
-            print("LLM template analysis failed. Cannot proceed.")
-            sys.exit(1)
-            
-        # Log template_with_vars for debugging
-        log_section("Template with Variables (from LLM)", template_with_vars)
+    # Currency formatting for all currency fields (plain numbers, no $)
+    for var in template_vars:
+        if var["is_currency"]:
+            k = var["name"]
+            v = extracted_data_dict.get(k)
+            if v is not None:
+                try:
+                    amount = float(str(v).replace("$","").replace(",","").strip())
+                    extracted_data_dict[k] = f"{amount:,.2f}"
+                except Exception:
+                    pass
 
-        # Step 5b: Extract Information
-        extracted_info_json, usage_extract = llm.extract_information(template_with_vars, combined_source_text)
-        if not extracted_info_json:
-             print("LLM information extraction failed. Cannot proceed.")
-             sys.exit(1)
-             
-        # Log extracted_info_json for debugging
-        log_section("Extracted Information JSON (from LLM)", extracted_info_json)
+    # --- Render Template ---
+    with open(template_path, "r") as f:
+        template_content = f.read()
 
-        # --- New Step: Interview User for Missing Information --- 
-        updated_extracted_info_json = extracted_info_json # Start with the original
-        if extracted_info_json:
-            try:
-                extracted_data_dict = json.loads(extracted_info_json)
+    proposal_text = render_template(template_content, extracted_data_dict)
 
-                # --- Inject Calculated/Provided Dates --- 
-                print("\nInjecting calculated/provided dates into extracted data...")
-                # Overwrite specific date fields with calculated values
-                # Ensure keys match the expected variables in templates
-                if 'proposal_date' in extracted_data_dict:
-                     extracted_data_dict['proposal_date'] = proposal_date_str
-                extracted_data_dict['acceptance_deadline_date'] = acceptance_deadline_date_str
-                extracted_data_dict['contract_date'] = contract_date_str
-                extracted_data_dict['advertising_start_date'] = advertising_start_date_str
-                extracted_data_dict['auction_end_date'] = auction_end_date_str
-                extracted_data_dict['closing_date'] = closing_date_str
-                # --- Marketing fields ---
-                extracted_data_dict['deposit_percentage'] = "15" # Always 15%
-                extracted_data_dict['marketing_website_newsletter_cost'] = "No Charge"
-                # Calculate marketing_total_cost with correct formatting and logic
-                def parse_money(val):
-                    try:
-                        v = str(val).replace('$','').replace(',','').strip()
-                        if not v or v.lower() == 'no charge':
-                            return 0.0
-                        return float(v)
-                    except Exception:
-                        return 0.0
-                total = 0.0
-                has_any_value = False
-                for k in ['marketing_facebook_cost','marketing_google_cost','marketing_direct_mail_cost','marketing_drone_cost','marketing_signs_cost']:
-                    v = extracted_data_dict.get(k)
-                    if v is not None and v != '' and str(v).lower() != 'no charge':
-                        total += parse_money(v)
-                        has_any_value = True
-                        # Format each value as currency with commas and 2 decimals
-                        try:
-                            extracted_data_dict[k] = f"${parse_money(v):,.2f}"
-                        except Exception:
-                            extracted_data_dict[k] = v
-                # Only show 'No Charge' if all fields are zero/blank/No Charge, else show total as $X,XXX.XX
-                if has_any_value and total > 0:
-                    extracted_data_dict['marketing_total_cost'] = f"${total:,.2f}"
-                else:
-                    extracted_data_dict['marketing_total_cost'] = "No Charge"
-                # Remove eliminated fields if present
-                for obsolete in ['marketing_expenses','marketing_retainer_fee_description','commission_reduction_amount']:
-                    if obsolete in extracted_data_dict:
-                        del extracted_data_dict[obsolete]
-                # --- End Date Injection ---
-
-                # --- Fix 1: Only include client_company if present and non-blank ---
-                if 'client_company' in extracted_data_dict and (not extracted_data_dict['client_company'] or extracted_data_dict['client_company'].strip() == ''):
-                    del extracted_data_dict['client_company']
-
-                # --- Fix 2: Always prompt for marketing budget line items if missing, blank, zero, or 'No Charge' ---
-                marketing_keys = [
-                    'marketing_facebook_cost',
-                    'marketing_google_cost',
-                    'marketing_direct_mail_cost',
-                    'marketing_drone_cost',
-                    'marketing_signs_cost'
-                ]
-                for k in marketing_keys:
-                    v = extracted_data_dict.get(k, None)
-                    if v is None or str(v).strip() in ('', '0', '0.0', '$0', '$0.00', 'No Charge', '[Information Not Found]'):
-                        extracted_data_dict[k] = '[Information Not Found]'
-
-                # --- Fix 3: Ensure all currency fields use commas and two decimals ---
-                def parse_money(val):
-                    try:
-                        v = str(val).replace('$','').replace(',','').strip()
-                        if not v or v.lower() == 'no charge' or v == '[Information Not Found]':
-                            return None
-                        return float(v)
-                    except Exception:
-                        return None
-                total = 0.0
-                has_any_value = False
-                for k in marketing_keys:
-                    v = extracted_data_dict.get(k)
-                    amount = parse_money(v)
-                    if amount is not None:
-                        has_any_value = True
-                        total += amount
-                        extracted_data_dict[k] = f"${amount:,.2f}"
-                    else:
-                        extracted_data_dict[k] = '[Information Not Found]'
-                if has_any_value and total > 0:
-                    extracted_data_dict['marketing_total_cost'] = f"${total:,.2f}"
-                else:
-                    extracted_data_dict['marketing_total_cost'] = "No Charge"
-
-                missing_keys = [
-                    key for key, value in extracted_data_dict.items() 
-                    if value == "[Information Not Found]" and key not in ['marketing_expenses','marketing_retainer_fee_description','commission_reduction_amount']
-                ]
-                
-                if missing_keys:
-                    print("\n--- Missing Information Interview ---")
-                    print("Some information required by the template was not found in the documents.")
-                    print("Please provide the missing details below (or press Enter to omit):")
-                    
-                    for key in missing_keys:
-                        # Create a more user-friendly prompt label
-                        prompt_label = key.replace('_', ' ').title()
-                        user_value = input(f"  Enter value for '{prompt_label}' (leave blank to omit): ").strip()
-                        if user_value:
-                            extracted_data_dict[key] = user_value
-                        else:
-                            extracted_data_dict[key] = "" # Set to blank instead of keeping placeholder
-                            
-                    # Remove blank fields from the dictionary
-                    extracted_data_dict = {k: v for k, v in extracted_data_dict.items() if v not in (None, "", "[Information Not Found]")}
-                    # Convert the updated dictionary back to JSON
-                    updated_extracted_info_json = json.dumps(extracted_data_dict, indent=2)
-                    log_section("Updated Extracted Information JSON (after interview)", updated_extracted_info_json)
-                    print("--- Interview Complete ---")
-                else:
-                     print("\nAll required template information appears to have been found in the documents.")
-                     
-            except json.JSONDecodeError:
-                print("\nWarning: Could not parse extracted information JSON. Skipping user interview.")
-            except Exception as e:
-                 print(f"\nWarning: An error occurred during the interview process: {e}. Skipping interview.")
-        # --- End Interview Step ---
-
-        # Step 5c: Generate Final Proposal
-        # Use the potentially updated JSON from the interview
-        final_proposal_md, usage_generate = llm.generate_final_proposal(template_with_vars, updated_extracted_info_json)
-        if not final_proposal_md:
-            print("LLM final proposal generation failed.")
-            sys.exit(1)
-            
-        log_section("Final Proposal Markdown (from LLM)", final_proposal_md)
-
-        # Remove markdown/code block formatting from final proposal output
-        # If the LLM output contains triple backticks or markdown code fences, strip them
-        def strip_markdown_code_blocks(text):
-            import re
-            # Remove code blocks (```...```)
-            return re.sub(r'```[a-zA-Z]*[\r\n]+|```', '', text)
-        final_proposal_md = strip_markdown_code_blocks(final_proposal_md)
-
-    except Exception as e:
-        print(f"An unexpected error occurred during the LLM generation process: {e}")
-        import traceback
-        traceback.print_exc()
-        sys.exit(1)
-
-    # --- Step 6: Save Final Proposal ---
-    try:
-        # Use timestamp in filename to avoid overwrite
-        base_output_filename = config.get("output_filename", "generated_proposal.md")
-        stem, ext = os.path.splitext(base_output_filename)
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-        output_filename = f"{stem}_{timestamp}{ext}"
-        output_file_path = folder_path / output_filename
-        print(f"\nSaving generated proposal to: {output_file_path}")
-        with open(output_file_path, "w", encoding="utf-8") as f:
-            f.write(final_proposal_md)
-        print("\nDone! The proposal has been successfully generated.")
-    except Exception as e:
-        print(f"Error saving the generated proposal file: {e}")
-        sys.exit(1)
+    # --- Write Proposal Output to Selected Folder with Timestamp ---
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    output_filename = f"generated_proposal_{timestamp}.md"
+    output_path = folder_path / output_filename
+    with open(output_path, "w") as f:
+        f.write(proposal_text)
+    print(f"Proposal generated and saved to {output_path}")
 
 
 if __name__ == "__main__":
@@ -495,6 +357,3 @@ if __name__ == "__main__":
     # --- End Dependency Check --- 
     
     run_proposal_builder()
-
-# --- Remove old, unused functions ---
-# (All functions previously defined in this file should now be in modules)

@@ -1,0 +1,134 @@
+[
+  {
+    "name": "proposal_date",
+    "source": "calculated",
+    "is_currency": false,
+    "is_date": true
+  },
+  {
+    "name": "owner_name",
+    "source": "extracted",
+    "is_currency": false,
+    "is_date": false
+  },
+  {
+    "name": "client_company",
+    "source": "extracted",
+    "is_currency": false,
+    "is_date": false
+  },
+  {
+    "name": "client_street_address",
+    "source": "extracted",
+    "is_currency": false,
+    "is_date": false
+  },
+  {
+    "name": "client_city",
+    "source": "extracted",
+    "is_currency": false,
+    "is_date": false
+  },
+  {
+    "name": "client_state",
+    "source": "extracted",
+    "is_currency": false,
+    "is_date": false
+  },
+  {
+    "name": "client_postal_code",
+    "source": "extracted",
+    "is_currency": false,
+    "is_date": false
+  },
+  {
+    "name": "property_description",
+    "source": "extracted",
+    "is_currency": false,
+    "is_date": false
+  },
+  {
+    "name": "auction_end_date",
+    "source": "calculated",
+    "is_currency": false,
+    "is_date": true
+  },
+  {
+    "name": "escrow_agent_name",
+    "source": "extracted",
+    "is_currency": false,
+    "is_date": false
+  },
+  {
+    "name": "closing_date",
+    "source": "calculated",
+    "is_currency": false,
+    "is_date": true
+  },
+  {
+    "name": "contract_date",
+    "source": "calculated",
+    "is_currency": false,
+    "is_date": true
+  },
+  {
+    "name": "advertising_start_date",
+    "source": "calculated",
+    "is_currency": false,
+    "is_date": true
+  },
+  {
+    "name": "marketing_facebook_cost",
+    "source": "user",
+    "is_currency": true,
+    "is_date": false
+  },
+  {
+    "name": "marketing_google_cost",
+    "source": "user",
+    "is_currency": true,
+    "is_date": false
+  },
+  {
+    "name": "marketing_direct_mail_cost",
+    "source": "user",
+    "is_currency": true,
+    "is_date": false
+  },
+  {
+    "name": "marketing_drone_cost",
+    "source": "user",
+    "is_currency": true,
+    "is_date": false
+  },
+  {
+    "name": "marketing_signs_cost",
+    "source": "user",
+    "is_currency": true,
+    "is_date": false
+  },
+  {
+    "name": "marketing_total_cost",
+    "source": "calculated",
+    "is_currency": true,
+    "is_date": false
+  },
+  {
+    "name": "total_due_at_contract",
+    "source": "calculated",
+    "is_currency": true,
+    "is_date": false
+  },
+  {
+    "name": "retainer",
+    "source": "user",
+    "is_currency": true,
+    "is_date": false
+  },
+  {
+    "name": "buyers_premium_percentage",
+    "source": "user",
+    "is_currency": false,
+    "is_date": false
+  }
+]

@@ -46,15 +46,15 @@ CRITICAL PATH
 
 MARKETING BUDGET
 
-Item Price
-McLemore Auction Website and Newsletter No Charge
-Facebook Advertising Campaign ${{marketing_facebook_cost}}
-Google Advertising Campaign ${{marketing_google_cost}}
-Direct Mail ${{marketing_direct_mail_cost}}
-Drone Photography and Video Production ${{marketing_drone_cost}}
-Sign Production and Installation ${{marketing_signs_cost}}
-
-Total ${{marketing_total_cost}}
+| Item | Price |
+| --- | --- |
+| McLemore Auction Website and Newsletter | No Charge |
+| Facebook Advertising Campaign | ${{marketing_facebook_cost}} |
+| Google Advertising Campaign | ${{marketing_google_cost}} |
+| Direct Mail | ${{marketing_direct_mail_cost}} |
+| Drone Photography and Video Production | ${{marketing_drone_cost}} |
+| Sign Production and Installation | ${{marketing_signs_cost}} |
+| **Total** | **${{marketing_total_cost}}** |
 
 PROPOSAL OPTION
 
@@ -62,31 +62,29 @@ Option 1: Reserve Auction Conditions
 
 1. We will sell the Property to the highest bidder subject to your acceptance of the high bid price determined at the auction.
 
-2. You will pay us ${{marketing_retainer_fee}} at the time of the execution of a Contract to Auction Real Estate. This amount will be credited toward your total marketing costs at closing.
+2. You will pay us ${{total_due_at_contract}} at the time of the execution of a Contract to Auction Real Estate. We will spend ${{marketing_total_cost}} advertising the Property and will retain ${{retainer}} as a fee for our services.
 
 3. A {{buyers_premium_percentage}}% buyer's premium will be added to the high bid price determined at the auction to arrive at the total contract sales price for the Property.
 
-4. We will receive an amount equal to the {{buyers_premium_percentage}}% buyer's premium as our commission at the real estate closing.
+4. We will receive an amount equal to the {{buyers_premium_percentage}}% buyer's premium less {{retainer}} as our commission at the real estate closing.
 
 Option 2: Absolute Auction Conditions
 
 1. We will sell the Property to the highest bidder at absolute auction, without minimum bids or reserve.
 
-2. A {{buyers_premium_percentage}}% buyer's premium will be added to the high bid prices determined at the auction to arrive at the total contract sales price for the
-Property.
+2. A {{buyers_premium_percentage}}% buyer's premium will be added to the high bid prices determined at the auction to arrive at the total contract sales price for the Property.
 
 3. We will receive an amount equal to the {{buyers_premium_percentage}}% buyer's premium as our commission at the real estate closing.
 
-4. We will receive a reimbursement for auction expenses in the amount of ${{marketing_expenses}} at the real estate closing.
+4. We will receive a reimbursement for auction expenses in the amount of ${{marketing_total_cost}} at the real estate closing.
 
-This proposal is provided for your consideration and acceptance at or before 5:00 pm on {{acceptance_deadline_date}}, after which time it may become necessary to postpone the proposed auction
-date.
+This proposal is provided for your consideration and acceptance at or before 5:00 pm on {{contract_date}}, after which time it may become necessary to postpone the proposed auction date.
 
 Thank you for the opportunity to submit this proposal. I look forward to working for you.
 
 Sincerely yours,
 
-Will McLemore, CAI
+**Will McLemore, CAI**  
 President
 
 <!-- Bio sections removed, will be appended dynamically if needed -->
