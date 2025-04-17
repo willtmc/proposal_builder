@@ -323,7 +323,6 @@ def run_proposal_builder():
                 # Calculate marketing_total_cost
                 def parse_money(val):
                     try:
-                        # Remove $ and commas, allow for 'No Charge' or blank
                         v = str(val).replace('$','').replace(',','').strip()
                         if not v or v.lower() == 'no charge':
                             return 0.0
@@ -333,7 +332,7 @@ def run_proposal_builder():
                 total = 0.0
                 for k in ['marketing_facebook_cost','marketing_google_cost','marketing_direct_mail_cost','marketing_drone_cost','marketing_signs_cost']:
                     v = extracted_data_dict.get(k)
-                    if v:
+                    if v is not None and v != '':
                         total += parse_money(v)
                 # Only show 'No Charge' if all fields are zero/blank, else show total as $X,XXX
                 if total > 0:
@@ -388,6 +387,14 @@ def run_proposal_builder():
             sys.exit(1)
             
         log_section("Final Proposal Markdown (from LLM)", final_proposal_md)
+
+        # Remove markdown/code block formatting from final proposal output
+        # If the LLM output contains triple backticks or markdown code fences, strip them
+        def strip_markdown_code_blocks(text):
+            import re
+            # Remove code blocks (```...```)
+            return re.sub(r'```[a-zA-Z]*[\r\n]+|```', '', text)
+        final_proposal_md = strip_markdown_code_blocks(final_proposal_md)
 
     except Exception as e:
         print(f"An unexpected error occurred during the LLM generation process: {e}")
