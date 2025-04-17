@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 
+from dotenv import load_dotenv
+load_dotenv()
+
 import os
 import sys
 import json # Added for pretty printing JSON
 import shutil # Import shutil for dependency checking
 from pathlib import Path
-from dotenv import load_dotenv
 from datetime import datetime, timedelta, date # Added date imports
 import calendar
 import subprocess
@@ -79,7 +81,6 @@ def run_proposal_builder():
         sys.exit(1) # Exit if config loading fails
 
     # Load API Key from .env or prompt user
-    load_dotenv()
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         print("\nOpenAI API key not found in .env file.")

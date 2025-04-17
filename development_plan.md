@@ -1,13 +1,18 @@
 # Development Plan - Proposal Builder
 
-## Current Status (As of Apr 06, 2024)
+## Current Status (As of Apr 17, 2025)
 
 - **Core Functionality:** The script successfully reads source documents (TXT, PDF via OCR) and combines them with selected templates (stored as TXT) to generate proposals using OpenAI (`gpt-4o`).
 - **Refactoring:** The initial monolithic script (`proposal_builder.py`) has been refactored into a modular structure within the `src/` directory, improving maintainability.
 - **Configuration:** Key settings (model name, output filename) are managed via `config.json`. API key is managed via `.env`.
 - **Template Handling:** Uses `.txt` templates stored in the `templates/` directory. User selects template type via command-line prompt.
-- **Date Handling:** Automatically calculates proposal date, acceptance deadline (next Friday), advertising start (second Monday), and prompts user for auction duration to calculate end date. These dates are injected before the final LLM call.
-- **Interactive Interview:** If the LLM cannot find specific information required by the template in the source documents, the script interactively prompts the user to provide the missing values.
+- **Date Handling:** Automatically calculates proposal date, contract date, advertising start, auction end, and closing date using business rules. Prompts user for auction duration (weeks) **before folder selection**.
+- **Variable Indexing:** Each template variable is indexed as `calculated`, `extracted`, or `user` in the template index JSON:
+    - `calculated`: Dates and totals computed by business logic.
+    - `extracted`: AI attempts to extract from documents, user is prompted if missing.
+    - `user`: Always prompted for user input (e.g., retainer, buyer's premium).
+- **Currency Handling:** All currency variables are formatted as plain numbers (no `$`), with the template handling currency symbols for output.
+- **Interactive Interview:** If the LLM cannot find specific information required by the template in the source documents, the script interactively prompts the user to provide the missing values, including all `user` variables.
 - **Token Usage Reporting:** Prints OpenAI token usage after each API call.
 - **Dependency Checks:** Checks for required external dependencies (Tesseract, Poppler) on startup and provides installation guidance if missing.
 - **Optional Photo Analysis:**

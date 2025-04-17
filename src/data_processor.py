@@ -3,9 +3,10 @@ import os
 import mimetypes
 from pathlib import Path
 from typing import List, Dict, Tuple, Optional
+import json
 
 from src import pdf_handler, ocr_service, file_utils
-from src import crs_parser  # NEW: Import CRS parser
+from src.crs_parser import extract_variables_from_document  
 
 # Add more image types if needed
 SUPPORTED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif"]
@@ -50,11 +51,10 @@ def process_folder(folder_path: Path) -> Tuple[str, List[Dict[str, str]], List[P
                     print("Detected CRS Property Report PDF. Using CRS-specific parser.")
                     raw_text = pdf_handler.extract_text_from_pdf(file_path)
                     if raw_text:
-                        crs_fields = crs_parser.parse_crs_text(raw_text)
-                        crs_summary = crs_parser.summarize_for_llm(crs_fields, raw_text)
-                        # Store the summary as the extracted_text for this file
-                        extracted_text = crs_summary
-                        print("CRS summary for LLM created.")
+                        crs_fields = extract_variables_from_document(raw_text)
+                        extracted_text = json.dumps(crs_fields, indent=2) if crs_fields else ""
+                        print("CRS extracted fields:")
+                        print(extracted_text)
                     else:
                         error_info = "Failed to extract text from CRS PDF."
                 else:

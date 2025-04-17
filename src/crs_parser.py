@@ -1,95 +1,75 @@
 """
 crs_parser.py
-Module for extracting structured data from CRS Property Report PDFs.
-Handles both deterministic parsing and prepares input for LLMs for ambiguous fields.
+Module for extracting structured data from CRS Property Report PDFs using LLM-based extraction.
 """
-import re
+import os
+import json
 from typing import Dict, Optional, List
+from pathlib import Path
+from .llm_service import LLMService
 
-def parse_crs_text(crs_text: str) -> Dict[str, Optional[str]]:
+# CONFIGURATION - update as needed for your environment
+OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
+LLM_CONFIG = {"openai_model": "gpt-4o"}  # or your preferred model
+# Path to the variable index JSON (single source of truth)
+VAR_INDEX_PATH = Path(__file__).parent.parent / "template_var_indexes/real_estate_auction_proposal.json"
+PROMPT_PATH = Path(__file__).parent.parent / "prompts/information_extraction_prompt.txt"
+
+
+def extract_variables_from_document(source_content: str, var_index_path: Optional[Path] = None, prompt_path: Optional[Path] = None) -> Optional[Dict]:
     """
-    Extracts key fields from CRS Property Report text.
-    Returns a dictionary with as many proposal template variables as possible.
+    Extract template variables (as defined in the variable index JSON) from any document using LLMService.
+    :param source_content: The full text of the CRS or other source document(s).
+    :param var_index_path: Path to the variable index JSON. Defaults to VAR_INDEX_PATH.
+    :param prompt_path: Path to the extraction prompt. Defaults to PROMPT_PATH.
+    :return: Dict of extracted variable values, or None on failure.
     """
-    result = {}
-
-    # Property Address
-    address_match = re.search(r"Property Address\s+(.+?)\s+([A-Za-z ]+),\s*([A-Z]{2})\s*(\d{5}(-\d{4})?)", crs_text)
-    if address_match:
-        result["property_street_address"] = address_match.group(1).strip()
-        result["property_city"] = address_match.group(2).strip()
-        result["property_state"] = address_match.group(3).strip()
-        result["property_postal_code"] = address_match.group(4).strip()
-        # For template compatibility
-        result["client_city"] = result["property_city"]
-        result["client_state"] = result["property_state"]
-        result["client_postal_code"] = result["property_postal_code"]
-
-    # Mailing Address (client address fields)
-    mailing_match = re.search(r"Mailing Address\s+(.+?)\s+([A-Za-z ]+),\s*([A-Z]{2})\s*(\d{5}(-\d{4})?)", crs_text)
-    if mailing_match:
-        result["client_street_address"] = mailing_match.group(1).strip()
-        result["client_city"] = mailing_match.group(2).strip()
-        result["client_state"] = mailing_match.group(3).strip()
-        result["client_postal_code"] = mailing_match.group(4).strip()
-
-    # Owner(s)
-    owner_matches = re.findall(r"Owner\s+(.+?)(?:\n|$)", crs_text)
-    if owner_matches:
-        # Combine all owners into a single string, separated by ' and '
-        owner_names = [name.strip().replace('Etux', '').replace('Etal', '').replace('Et', '').replace('Et Vir', '').replace('Et Ux', '').replace('Etux.', '').replace('Etal.', '').replace('Et.', '') for name in owner_matches]
-        owner_names = [re.sub(r'\s+', ' ', n) for n in owner_names if n]
-        owner_names = [n for n in owner_names if n]
-        result["owner_name"] = " and ".join(owner_names)
-
-    # Lot Size (acres and sq ft)
-    lot_match = re.search(r"Acreage\s+([\d\.]+)", crs_text)
-    if lot_match:
-        result["lot_size_acres"] = lot_match.group(1)
-    lot_sqft_match = re.search(r"Lot Square Feet\s+([\d,]+)", crs_text)
-    if lot_sqft_match:
-        result["lot_size_sqft"] = lot_sqft_match.group(1).replace(",", "")
-
-    # Appraised Value
-    appraised_match = re.search(r"Total T ax Appraisal\s*\$([\d,]+)", crs_text)
-    if appraised_match:
-        result["appraised_value"] = appraised_match.group(1).replace(",", "")
-
-    # Year Built
-    year_built_match = re.search(r"Year Built\s+(\d{4})", crs_text)
-    if year_built_match:
-        result["year_built"] = year_built_match.group(1)
-
-    # Square Feet
-    sqft_match = re.search(r"Square Feet\s+(\d+)", crs_text)
-    if sqft_match:
-        result["square_feet"] = sqft_match.group(1)
-
-    # Property Type
-    prop_type_match = re.search(r"Property T ype\s+([A-Za-z ]+)", crs_text)
-    if prop_type_match:
-        result["property_type"] = prop_type_match.group(1).strip()
-
-    # Improvement Type
-    improvement_match = re.search(r"Improvement T ype\s+([A-Za-z ]+)", crs_text)
-    if improvement_match:
-        result["improvement_type"] = improvement_match.group(1).strip()
-
-    # Zoning (if present)
-    zoning_match = re.search(r"Zoning Code\s+([\w\- ]+)", crs_text)
-    if zoning_match:
-        result["zoning"] = zoning_match.group(1).strip()
-
-    # Additional fields can be added as needed
-    return result
-
-def summarize_for_llm(fields: Dict[str, Optional[str]], full_text: str) -> str:
-    """
-    Create a structured summary for the LLM prompt, combining parsed fields and raw text for context.
-    """
-    summary = ["CRS Property Report Summary:"]
-    for k, v in fields.items():
-        if v:
-            summary.append(f"{k.replace('_', ' ').title()}: {v}")
-    summary.append("\nFull CRS Text (for reference):\n" + full_text)
-    return "\n".join(summary)
+    if not OPENAI_API_KEY:
+        raise RuntimeError("OPENAI_API_KEY environment variable not set.")
+    llm = LLMService(api_key=OPENAI_API_KEY, config=LLM_CONFIG)
+    if var_index_path is None:
+        var_index_path = VAR_INDEX_PATH
+    if prompt_path is None:
+        prompt_path = PROMPT_PATH
+    # Load variable names from index, filtering for source == "extracted"
+    with open(var_index_path, "r", encoding="utf-8") as f:
+        var_index = json.load(f)
+    variable_names = [v["name"] for v in var_index if v.get("source") == "extracted"]
+    # Build the prompt: list variables explicitly, do NOT include the template
+    variable_list_str = "\n".join([f"- {name}" for name in variable_names])
+    user_prompt = (
+        f"Here is the list of required variables for the proposal (use these as JSON keys):\n"
+        f"{variable_list_str}\n\n"
+        f"Here are the source documents (potentially including a photo-based inventory description, agent bio, company bio, and client documents):\n\n"
+        f"{source_content}\n\n"
+        f"---\n"
+        f"Special Instructions for CRS Property Reports:\n"
+        f"- For owner_name, if the CRS lists a name like 'Brock Perry Lynn Etux Phyllis', convert this to 'Perry Lynn and Phyllis Brock'. The first part is the primary owner (first and middle names), and 'Etux' or 'Et Vir' means 'and [spouse first name]'. Place the last name at the end.\n"
+        f"  Example: 'Smith John Etux Jane' → 'John and Jane Smith'\n"
+        f"- For owner address fields (client_street_address, client_city, client_state, client_postal_code), always use the 'Mailing Address' line directly below the owner name in the CRS Property Report.\n"
+        f"- If the owner is a company, map the company name to client_company and leave individual name fields blank.\n"
+        f"- If there are multiple owners, list all of them in the owner_name field, separated by 'and'.\n"
+        f"- If a value is definitively not found in the source documents for a specific variable, use the exact placeholder '[Information Not Found]'. Do not guess or make up information.\n"
+        f"- Format the response as a JSON object where keys are variable names (no curly braces) and values are the extracted content or the placeholder.\n"
+        f"- Ensure the output is ONLY the JSON object, with no preamble or explanation.\n"
+    )
+    system_prompt = (
+        "You are a professional real estate analyst. Your task is to extract detailed property information from documents. "
+        "Pay special attention to: Property details, financial information, legal documents, special features, location details. "
+        "Format all numbers consistently and include units."
+    )
+    # Call LLM
+    extracted_json, _ = llm._call_openai_api(system_prompt, user_prompt, LLM_CONFIG["openai_model"])
+    if not extracted_json:
+        print("Failed to extract information from document.")
+        return None
+    try:
+        # Clean up potential markdown fences if LLM adds them
+        if extracted_json.startswith("```json"):
+            extracted_json = extracted_json[7:]
+        if extracted_json.endswith("```"):
+            extracted_json = extracted_json[:-3]
+        return json.loads(extracted_json.strip())
+    except Exception as e:
+        print(f"Failed to parse extracted JSON: {e}")
+        return None
