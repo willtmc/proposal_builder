@@ -4,16 +4,16 @@ AUCTION COMPANY
 
 [Document.CreatedDate]
 
-[Client.FirstName] [Client.LastName]
+[Owner.Name]
 [Client.Company]
 
 [Client.StreetAddress]
 
 [Client.City], [Client.State] [Client.PostalCode]
 
-Dear [Client.FirstName] [Client.LastName]:
+Dear [Owner.Name]:
 
-| am pleased to present the following proposal for the sale of your Property at auction.
+I am pleased to present the following proposal for the sale of your Property at auction.
 
 PROPERTY DESCRIPTION
 
@@ -94,7 +94,7 @@ This proposal is provided for your consideration and acceptance at or before 5:0
 {{acceptance_deadline_date}}, after which time it may become necessary to postpone the proposed auction
 date.
 
-Thank you for the opportunity to submit this proposal. | look forward to working for you.
+Thank you for the opportunity to submit this proposal. I look forward to working for you.
 
 Sincerely yours,
 
@@ -104,5 +104,3 @@ President
 470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
 
 <!-- Bio sections removed, will be appended dynamically if needed -->
-
-

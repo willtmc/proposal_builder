@@ -6,6 +6,14 @@ Here are the source documents (potentially including a photo-based inventory des
 
 {combined_source_text}
 
+---
+If the CLIENT DOCUMENTS section contains a "CRS Property Report Summary" or similar summary, use it as the primary source for extracting all property and owner information. Use the structured fields in the summary for mapping to template variables. For ambiguous fields (like owner names), use the full CRS text and context to produce human-readable, properly formatted names and values (e.g., convert 'Brock Perry Lynn Etux Phyllis' to 'Perry Lynn and Phyllis Brock' if context indicates these are two individuals).
+
+If the owner is a company, map the company name to `client_company` and leave individual name fields blank. If there are multiple owners, list all of them in the `owner_name` field, separated by 'and'. Use the single `owner_name` variable for all owner references in the template. Always prefer the mailing address over the property address for client address fields.
+
+If a value is not present in the summary or CRS text, leave it blank or use the placeholder as described below.
+---
+
 1. Extract all information needed to fill in the template variables. Use all sections of the provided source text (Photo-based inventory, Agent Bio, Company Bio, Client Docs) as needed.
 2. Pay special attention to the PHOTO-BASED INVENTORY section, if present, when filling the `property_description` variable.
 3. For each variable in the template, provide the exact value found in the source text or inferred from the images. Analyze names like 'Leah Pucket' to populate `client_first_name` and `client_last_name` fields if possible.
@@ -16,4 +24,4 @@ Here are the source documents (potentially including a photo-based inventory des
 8. Format all financial numbers with commas and dollar signs (e.g., $1,234,567.89).
 9. Include units for all measurements where applicable.
 10. Extract relevant biographical information from the AGENT BIO and COMPANY BIO sections if template variables like {{agent_bio}} or {{company_bio}} exist.
-11. Ensure the output is ONLY the JSON object, with no preamble or explanation. 
+11. Ensure the output is ONLY the JSON object, with no preamble or explanation.

@@ -3,14 +3,14 @@ MCLEMORE
 AUCTION COMPANY
 
 {{document_created_date}}
-{{client_first_name}} {{client_last_name}}
+{{owner_name}}
 {{client_company}}
 
 {{client_street_address}}
 
 {{client_city}}, {{client_state}} {{client_postal_code}}
 
-Dear {{client_first_name}} {{client_last_name}}:
+Dear {{owner_name}}:
 
 | am pleased to present the following proposal for the sale of your Real Estate and Personal
 Property at auction.
@@ -198,6 +198,3 @@ President
 470 Woodycrest Ave., Nashville, TN 37210 - www.McLemoreAuction.com - (615) 517-7675
 
 <!-- Bio sections removed, will be appended dynamically if needed -->
-
-
-

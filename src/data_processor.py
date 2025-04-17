@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import List, Dict, Tuple, Optional
 
 from src import pdf_handler, ocr_service, file_utils
+from src import crs_parser  # NEW: Import CRS parser
 
 # Add more image types if needed
 SUPPORTED_IMAGE_EXTENSIONS = [".png", ".jpg", ".jpeg", ".tiff", ".bmp", ".gif"]
@@ -32,6 +33,10 @@ def process_folder(folder_path: Path) -> Tuple[str, List[Dict[str, str]], List[P
     print(f"\nProcessing files in folder: {folder_path}")
 
     for item in folder_path.iterdir():
+        # --- Skip output/previously generated files ---
+        if item.name.startswith("generated_proposal") or item.name.endswith("_output.md") or item.name.endswith("_proposal.md"):
+            print(f"Skipping previously generated output file: {item.name}")
+            continue
         if item.is_file():
             print(f"\n--- Processing File: {item.name} ---")
             file_path = item.absolute()
@@ -40,40 +45,53 @@ def process_folder(folder_path: Path) -> Tuple[str, List[Dict[str, str]], List[P
             processed_as_image = False # Flag to track if we handled it as an image
 
             try:
-                # Basic checks
-                if not os.access(file_path, os.R_OK):
-                    error_info = "File is not readable (permissions?)."
-                    print(f"Warning: {error_info}")
-                elif not file_path.stat().st_size > 0:
-                    # Allow empty files, but log warning. Don't skip image files.
-                    if item.suffix.lower() not in SUPPORTED_IMAGE_EXTENSIONS:
-                        error_info = "File is empty (0 bytes)."
-                        print(f"Warning: {error_info}")
+                # CRS PDF SPECIAL HANDLING
+                if item.name.lower().startswith("crs property report") and item.suffix.lower() == ".pdf":
+                    print("Detected CRS Property Report PDF. Using CRS-specific parser.")
+                    raw_text = pdf_handler.extract_text_from_pdf(file_path)
+                    if raw_text:
+                        crs_fields = crs_parser.parse_crs_text(raw_text)
+                        crs_summary = crs_parser.summarize_for_llm(crs_fields, raw_text)
+                        # Store the summary as the extracted_text for this file
+                        extracted_text = crs_summary
+                        print("CRS summary for LLM created.")
                     else:
-                        # Images can be 0 bytes temporarily during sync etc., still collect path
-                        print(f"Notice: Image file {item.name} has 0 bytes, collecting path anyway.")
+                        error_info = "Failed to extract text from CRS PDF."
+                else:
+                    # Basic checks
+                    if not os.access(file_path, os.R_OK):
+                        error_info = "File is not readable (permissions?)."
+                        print(f"Warning: {error_info}")
+                    elif not file_path.stat().st_size > 0:
+                        # Allow empty files, but log warning. Don't skip image files.
+                        if item.suffix.lower() not in SUPPORTED_IMAGE_EXTENSIONS:
+                            error_info = "File is empty (0 bytes)."
+                            print(f"Warning: {error_info}")
+                        else:
+                            # Images can be 0 bytes temporarily during sync etc., still collect path
+                            print(f"Notice: Image file {item.name} has 0 bytes, collecting path anyway.")
 
-                # Only proceed if no critical error yet (readable, or 0-byte image)
-                if error_info != "File is not readable (permissions?).":
-                    # Determine file type and process
-                    file_ext = item.suffix.lower()
-                    mime_type, _ = mimetypes.guess_type(file_path)
-                    mime_type = mime_type or "" # Ensure mime_type is a string
+                    # Only proceed if no critical error yet (readable, or 0-byte image)
+                    if error_info != "File is not readable (permissions?).":
+                        # Determine file type and process
+                        file_ext = item.suffix.lower()
+                        mime_type, _ = mimetypes.guess_type(file_path)
+                        mime_type = mime_type or "" # Ensure mime_type is a string
 
-                    print(f"Detected extension: {file_ext}, MIME type: {mime_type}")
+                        print(f"Detected extension: {file_ext}, MIME type: {mime_type}")
 
-                    if file_ext == '.pdf' or "pdf" in mime_type:
-                        extracted_text = pdf_handler.extract_text_from_pdf(file_path)
-                    elif file_ext in SUPPORTED_IMAGE_EXTENSIONS or mime_type.startswith("image"):
-                        # Instead of OCR, collect the image path
-                        print(f"Collecting image file for analysis: {item.name}")
-                        image_paths.append(file_path)
-                        processed_as_image = True # Mark that we handled this as an image
-                    elif file_ext in SUPPORTED_TEXT_EXTENSIONS or mime_type.startswith("text"):
-                        extracted_text = file_utils.extract_text_file(file_path)
-                    elif error_info is None: # Only mark unsupported if no prior error
-                        error_info = f"Unsupported file type (ext: {file_ext}, mime: {mime_type}). Skipped."
-                        print(f"Notice: {error_info}")
+                        if file_ext == '.pdf' or "pdf" in mime_type:
+                            extracted_text = pdf_handler.extract_text_from_pdf(file_path)
+                        elif file_ext in SUPPORTED_IMAGE_EXTENSIONS or mime_type.startswith("image"):
+                            # Instead of OCR, collect the image path
+                            print(f"Collecting image file for analysis: {item.name}")
+                            image_paths.append(file_path)
+                            processed_as_image = True # Mark that we handled this as an image
+                        elif file_ext in SUPPORTED_TEXT_EXTENSIONS or mime_type.startswith("text"):
+                            extracted_text = file_utils.extract_text_file(file_path)
+                        elif error_info is None: # Only mark unsupported if no prior error
+                            error_info = f"Unsupported file type (ext: {file_ext}, mime: {mime_type}). Skipped."
+                            print(f"Notice: {error_info}")
 
                 # Consolidate results
                 if extracted_text:

@@ -7,6 +7,7 @@ import shutil # Import shutil for dependency checking
 from pathlib import Path
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, date # Added date imports
+import calendar
 
 # Import functions/classes from the new modules
 from src import config_loader, ui_handler, data_processor, llm_service, file_utils, pdf_handler
@@ -64,20 +65,7 @@ def run_proposal_builder():
     today = date.today()
     proposal_date_str = today.strftime("%B %d, %Y") # Format for potential use
 
-    # Calculate next Friday (Acceptance Deadline)
-    days_until_friday = (4 - today.weekday() + 7) % 7
-    if days_until_friday == 0: # If today is Friday, get next Friday
-        days_until_friday = 7
-    acceptance_deadline_date = today + timedelta(days=days_until_friday)
-    acceptance_deadline_date_str = acceptance_deadline_date.strftime("%B %d, %Y")
-
-    # Calculate second Monday (Advertising Start)
-    days_until_monday = (0 - today.weekday() + 7) % 7
-    first_monday = today + timedelta(days=days_until_monday)
-    advertising_start_date = first_monday + timedelta(weeks=1) # Second Monday
-    advertising_start_date_str = advertising_start_date.strftime("%B %d, %Y")
-
-    # Prompt for Auction Duration
+    # Step 1: Get Auction End Date from User
     auction_weeks = None
     while auction_weeks is None:
         try:
@@ -88,15 +76,46 @@ def run_proposal_builder():
                  auction_weeks = None
         except ValueError:
             print("Invalid input. Please enter a number.")
-            
     auction_end_date = today + timedelta(weeks=auction_weeks)
     auction_end_date_str = auction_end_date.strftime("%B %d, %Y")
 
+    # --- New: Calculate Closing Date (30 days after auction, next business day if needed) ---
+    def next_business_day(start_date):
+        d = start_date
+        while d.weekday() >= 5:  # 5 = Saturday, 6 = Sunday
+            d += timedelta(days=1)
+        return d
+    closing_candidate = auction_end_date + timedelta(days=30)
+    closing_date = next_business_day(closing_candidate)
+    closing_date_str = closing_date.strftime("%B %d, %Y")
+
+    # --- New: Calculate Contract Date (Friday of week following proposal date) ---
+    # Find next week's Monday
+    days_until_next_monday = (0 - today.weekday() + 7) % 7
+    next_monday = today + timedelta(days=days_until_next_monday)
+    # Friday of that week
+    contract_date = next_monday + timedelta(days=4)
+    contract_date_str = contract_date.strftime("%B %d, %Y")
+
+    # --- New: Advertising Start Date (second Monday after contract date) ---
+    days_until_monday_from_contract = (0 - contract_date.weekday() + 7) % 7
+    first_monday_after_contract = contract_date + timedelta(days=days_until_monday_from_contract)
+    advertising_start_date = first_monday_after_contract + timedelta(weeks=1) # Second Monday after contract
+    advertising_start_date_str = advertising_start_date.strftime("%B %d, %Y")
+
+    # --- Calculate Acceptance Deadline (Friday after today) ---
+    days_until_friday = (4 - today.weekday() + 7) % 7
+    if days_until_friday == 0: # If today is Friday, get next Friday
+        days_until_friday = 7
+    acceptance_deadline_date = today + timedelta(days=days_until_friday)
+    acceptance_deadline_date_str = acceptance_deadline_date.strftime("%B %d, %Y")
+
     print(f"  Calculated Proposal Date: {proposal_date_str}")
     print(f"  Calculated Acceptance Deadline: {acceptance_deadline_date_str}")
+    print(f"  Calculated Contract Date: {contract_date_str}")
     print(f"  Calculated Advertising Start Date: {advertising_start_date_str}")
     print(f"  Calculated Auction End Date: {auction_end_date_str}")
-    # --- End Date Calculations ---
+    print(f"  Calculated Closing Date: {closing_date_str}")
 
     # --- Step 1: Select Data Folder ---
     print("\nStep 1: Select the folder containing your source documents")
@@ -294,31 +313,60 @@ def run_proposal_builder():
                 if 'proposal_date' in extracted_data_dict:
                      extracted_data_dict['proposal_date'] = proposal_date_str
                 extracted_data_dict['acceptance_deadline_date'] = acceptance_deadline_date_str
+                extracted_data_dict['contract_date'] = contract_date_str
                 extracted_data_dict['advertising_start_date'] = advertising_start_date_str
                 extracted_data_dict['auction_end_date'] = auction_end_date_str
-                # Add other date fields like 'contract_date' or 'closing_date' if needed
-                # extracted_data_dict['contract_date'] = proposal_date_str # Example: Use proposal date as contract date?
+                extracted_data_dict['closing_date'] = closing_date_str
+                # --- Marketing fields ---
+                extracted_data_dict['deposit_percentage'] = "15" # Always 15%
+                extracted_data_dict['marketing_website_newsletter_cost'] = "No Charge"
+                # Calculate marketing_total_cost
+                def parse_money(val):
+                    try:
+                        # Remove $ and commas, allow for 'No Charge' or blank
+                        v = str(val).replace('$','').replace(',','').strip()
+                        if not v or v.lower() == 'no charge':
+                            return 0.0
+                        return float(v)
+                    except:
+                        return 0.0
+                total = 0.0
+                for k in ['marketing_facebook_cost','marketing_google_cost','marketing_direct_mail_cost','marketing_drone_cost','marketing_signs_cost']:
+                    v = extracted_data_dict.get(k)
+                    if v:
+                        total += parse_money(v)
+                # Only show 'No Charge' if all fields are zero/blank, else show total as $X,XXX
+                if total > 0:
+                    extracted_data_dict['marketing_total_cost'] = f"${total:,.0f}"
+                else:
+                    extracted_data_dict['marketing_total_cost'] = "No Charge"
+                # Remove eliminated fields if present
+                for obsolete in ['marketing_expenses','marketing_retainer_fee_description','commission_reduction_amount']:
+                    if obsolete in extracted_data_dict:
+                        del extracted_data_dict[obsolete]
                 # --- End Date Injection ---
 
                 missing_keys = [
                     key for key, value in extracted_data_dict.items() 
-                    if value == "[Information Not Found]"
+                    if value == "[Information Not Found]" and key not in ['marketing_expenses','marketing_retainer_fee_description','commission_reduction_amount']
                 ]
                 
                 if missing_keys:
                     print("\n--- Missing Information Interview ---")
                     print("Some information required by the template was not found in the documents.")
-                    print("Please provide the missing details below (or press Enter to keep placeholder):")
+                    print("Please provide the missing details below (or press Enter to omit):")
                     
                     for key in missing_keys:
                         # Create a more user-friendly prompt label
                         prompt_label = key.replace('_', ' ').title()
-                        user_value = input(f"  Enter value for '{prompt_label}': ").strip()
+                        user_value = input(f"  Enter value for '{prompt_label}' (leave blank to omit): ").strip()
                         if user_value:
                             extracted_data_dict[key] = user_value
                         else:
-                            print(f"    Keeping placeholder for '{key}'.")
+                            extracted_data_dict[key] = "" # Set to blank instead of keeping placeholder
                             
+                    # Remove blank fields from the dictionary
+                    extracted_data_dict = {k: v for k, v in extracted_data_dict.items() if v not in (None, "", "[Information Not Found]")}
                     # Convert the updated dictionary back to JSON
                     updated_extracted_info_json = json.dumps(extracted_data_dict, indent=2)
                     log_section("Updated Extracted Information JSON (after interview)", updated_extracted_info_json)
@@ -349,20 +397,16 @@ def run_proposal_builder():
 
     # --- Step 6: Save Final Proposal ---
     try:
-        output_filename = config.get("output_filename", "generated_proposal.md")
-        output_file_path = folder_path / output_filename 
-        
+        # Use timestamp in filename to avoid overwrite
+        base_output_filename = config.get("output_filename", "generated_proposal.md")
+        stem, ext = os.path.splitext(base_output_filename)
+        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        output_filename = f"{stem}_{timestamp}{ext}"
+        output_file_path = folder_path / output_filename
         print(f"\nSaving generated proposal to: {output_file_path}")
         with open(output_file_path, "w", encoding="utf-8") as f:
             f.write(final_proposal_md)
-            
         print("\nDone! The proposal has been successfully generated.")
-        # Keep showing first few lines in normal output
-        # print("First few lines of generated content:")
-        # print("---")
-        # print("\n".join(final_proposal_md.split("\n")[:10])) # Show first 10 lines
-        # print("---")
-
     except Exception as e:
         print(f"Error saving the generated proposal file: {e}")
         sys.exit(1)
